@@ -1,6 +1,6 @@
 import scrapy
 
-from culturefr.items import CulturefrItem
+from culturefr.items import CulFrItem
 
 class culturefrSpider(scrapy.spiders.CrawlSpider):
     name = "culturefr"
@@ -19,18 +19,44 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
         }
 
     def start_requests(self):
-        urls = [
-            'http://www.culture.fr/franceterme/'
-            'result?francetermeSearchTerme='
-            '&francetermeSearchDomaine=13'
-            '&francetermeSearchSubmit=rechercher'
-            '&action=search',
-        ]
+        start_url = 'http://www.culture.fr/franceterme/result?francetermeSearchTerme='
+        '&francetermeSearchDomaine=13'
+        '&francetermeSearchSubmit=rechercher'
+        '&action=search'
 
-        for url in urls:
-            yield scrapy.Request(url=url, headers=self.headers, callback=self.parse)
+        yield scrapy.Request(url=start_url, headers=self.headers,
+                             callback=self.parse, meta={'recnt': 0})
+
+    def reform(self, _str):
+        result = _str.split(',')[0]
+
+        result = result.replace("  ", "")
+
+        if result.endswith(" "):
+            result = result[:-1]
+
+        return result
+
+    def get_item(self, word_item):
+        cfi = CulFrItem()
+        cfi['word_name'] = self.reform(word_item.xpath('h3//text()')[0].extract())
+
+        dt_list = word_item.xpath('dl/dt')
+
+        print(dt_list)
+
+        return cfi
 
     def parse(self, response):
         word_list = response.xpath('//div[@id="detail"]')
+
+        recnt = response.meta['recnt']
+
+        if not word_list and recnt < 3:
+            scrapy.Request(url=response.url, headers=self.headers,
+                           callback=self.parse, meta={'recnt': recnt+1})
+
         for word_item in word_list:
-            print(word_item)
+            self.get_item(word_item)
+
+

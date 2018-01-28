@@ -8,7 +8,7 @@
 import scrapy
 
 
-class CulturefrItem(scrapy.Item):
+class CulFrItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     word_name = scrapy.Field()
