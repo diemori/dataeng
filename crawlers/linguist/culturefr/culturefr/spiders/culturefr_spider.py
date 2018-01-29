@@ -31,19 +31,49 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
         result = _str.split(',')[0]
 
         result = result.replace("  ", "")
+        result = result.replace("\t", "")
+        result = result.replace("\n", "")
 
         if result.endswith(" "):
             result = result[:-1]
 
         return result
 
-    def get_item(self, word_item):
+    def get_item(self, word_item, _url):
         cfi = CulFrItem()
         cfi['word_name'] = self.reform(word_item.xpath('h3//text()')[0].extract())
 
+        date_gras = word_item.xpath('span//text()').extract()[1]
+        cfi['journal_official_du'] = date_gras
+
+        cfi['source'] = _url
+
         dt_list = word_item.xpath('dl/dt')
 
-        print(dt_list)
+        for dt in dt_list:
+            dt_name = dt.xpath('text()').extract()[0]
+            print(dt_name)
+
+            dd = dt.xpath('following-sibling::dd//text()')[0].extract()
+            dd_value = self.reform(dd)
+
+            if 'Domaine' in dt_name:
+                cfi['domain'] = dd_value
+
+            if 'Synonyme' in dt_name:
+                cfi['synonyme'] = dd_value
+
+            if 'Définition' in dt_name:
+                cfi['definition'] = dd_value
+
+            if 'Note' in dt_name:
+                cfi['note'] = dd_value
+
+            if 'Voir aussi' in dt_name:
+                cfi['voir_aussi'] = dd_value
+
+            if 'Équivalent étranger' in dt_name:
+                cfi['equivalent'] = dd_value
 
         return cfi
 
@@ -57,6 +87,6 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
                            callback=self.parse, meta={'recnt': recnt+1})
 
         for word_item in word_list:
-            self.get_item(word_item)
+            self.get_item(word_item, response.url)
 
 
