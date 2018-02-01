@@ -19,10 +19,7 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
         }
 
     def start_requests(self):
-        start_url = 'http://www.culture.fr/franceterme/result?francetermeSearchTerme='
-        '&francetermeSearchDomaine=13'
-        '&francetermeSearchSubmit=rechercher'
-        '&action=search'
+        start_url = 'http://www.culture.fr/franceterme/result?francetermeSearchTerme=&francetermeSearchDomaine=13&francetermeSearchSubmit=rechercher&action=search'
 
         yield scrapy.Request(url=start_url, headers=self.headers,
                              callback=self.parse, meta={'recnt': 0})
@@ -81,7 +78,11 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
 
         recnt = response.meta['recnt']
 
-        if not word_list and recnt < 3:
+        print("[%d] %s" % (recnt, response.url))
+
+        if not word_list:
+            if recnt > 3:
+                exit()
             scrapy.Request(url=response.url, headers=self.headers,
                            callback=self.parse, meta={'recnt': recnt+1})
 
@@ -89,5 +90,17 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
             result = self.get_item(word_item, response.url)
 
             yield result
+
+        icon = response.xpath('//a[@class="icon-icon-chevron-right"]')
+
+        if not icon:
+            exit()
+
+        next_page_url = "http://www.culture.fr%s" % icon[0].xpath('@href').extract()[0]
+
+        print("[next_page_url] %s" % next_page_url)
+
+        yield scrapy.Request(url=next_page_url, headers=self.headers,
+                       callback=self.parse, meta={'recnt': 0})
 
 
