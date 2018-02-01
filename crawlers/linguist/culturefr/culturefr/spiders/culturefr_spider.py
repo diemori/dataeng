@@ -52,7 +52,6 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
 
         for dt in dt_list:
             dt_name = dt.xpath('text()').extract()[0]
-            print(dt_name)
 
             dd = dt.xpath('following-sibling::dd//text()')[0].extract()
             dd_value = self.reform(dd)
@@ -87,6 +86,8 @@ class culturefrSpider(scrapy.spiders.CrawlSpider):
                            callback=self.parse, meta={'recnt': recnt+1})
 
         for word_item in word_list:
-            self.get_item(word_item, response.url)
+            result = self.get_item(word_item, response.url)
+
+            yield result
 
 
